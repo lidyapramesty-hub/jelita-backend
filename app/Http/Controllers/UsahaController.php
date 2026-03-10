@@ -210,7 +210,7 @@ class UsahaController extends Controller
             ->filter(fn ($count, $key) => $key !== '' && $key !== null)
             ->toArray();
 
-        $byKategori = $usaha->groupBy('kbli_kategori_nama')
+        $byKategori = $usaha->groupBy('kbli_kategori_kode')
             ->map(fn ($group) => $group->count())
             ->filter(fn ($count, $key) => $key !== '' && $key !== null)
             ->toArray();
