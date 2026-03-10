@@ -1,0 +1,327 @@
+{
+  "info": {
+    "name": "JELITA Backend API",
+    "description": "API Collection untuk JELITA - Jendela Ekonomi Digital Kabupaten Tabanan",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('token', jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"ari.noviantari\",\n    \"password\": \"Andreana1212#\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "description": "Login dengan username dan password. Token akan otomatis disimpan ke collection variable."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User (Me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me",
+              "host": ["{{base_url}}"],
+              "path": ["me"]
+            },
+            "description": "Mendapatkan data user yang sedang login."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/logout",
+              "host": ["{{base_url}}"],
+              "path": ["logout"]
+            },
+            "description": "Logout dan menghapus token saat ini."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Usaha",
+      "item": [
+        {
+          "name": "Get All Usaha",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/usaha",
+              "host": ["{{base_url}}"],
+              "path": ["usaha"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "kelas_usaha",
+                  "value": "mikro",
+                  "disabled": true
+                },
+                {
+                  "key": "cakupan_pasar",
+                  "value": "lokal",
+                  "disabled": true
+                },
+                {
+                  "key": "kecamatan_nama",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "kbli_kategori_kode",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sort_by",
+                  "value": "created_at",
+                  "disabled": true
+                },
+                {
+                  "key": "sort_dir",
+                  "value": "desc",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Mendapatkan semua data usaha. Mendukung filter: search, kelas_usaha, cakupan_pasar, kecamatan_nama, kbli_kategori_kode, sort_by, sort_dir."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Usaha Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/usaha/stats",
+              "host": ["{{base_url}}"],
+              "path": ["usaha", "stats"]
+            },
+            "description": "Mendapatkan statistik dashboard: total, per kelas usaha, per cakupan pasar, per kecamatan, per kategori KBLI."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Usaha by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/usaha/:id",
+              "host": ["{{base_url}}"],
+              "path": ["usaha", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "uuid-here"
+                }
+              ]
+            },
+            "description": "Mendapatkan detail usaha berdasarkan ID (UUID)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Usaha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nama_pemilik\": \"I Wayan Contoh\",\n    \"nama_usaha\": \"Toko Digital Bali\",\n    \"deskripsi_kegiatan\": \"Penjualan produk kerajinan Bali secara online\",\n    \"kbli_kategori_kode\": \"G\",\n    \"kbli_kategori_nama\": \"Perdagangan Besar dan Eceran\",\n    \"kbli_golongan_pokok_kode\": \"47\",\n    \"kbli_golongan_pokok_nama\": \"Perdagangan Eceran\",\n    \"kbli_golongan_kode\": \"479\",\n    \"kbli_golongan_nama\": \"Perdagangan Eceran Bukan di Toko\",\n    \"kbli_subgolongan_kode\": \"4791\",\n    \"kbli_subgolongan_nama\": \"Perdagangan Eceran Melalui Media\",\n    \"kbli_kelompok_kode\": \"47911\",\n    \"kbli_kelompok_nama\": \"Perdagangan Eceran Melalui Media untuk Komoditi Makanan\",\n    \"provinsi_kode\": \"51\",\n    \"provinsi_nama\": \"Bali\",\n    \"kabkot_kode\": \"5102\",\n    \"kabkot_nama\": \"Tabanan\",\n    \"kecamatan_kode\": \"510201\",\n    \"kecamatan_nama\": \"Kediri\",\n    \"desa_kode\": \"5102010001\",\n    \"desa_nama\": \"Beraban\",\n    \"sls_kode\": \"001\",\n    \"sls_nama\": \"Banjar Tegal\",\n    \"sub_sls\": \"Jl. Raya Tanah Lot No. 5\",\n    \"latitude\": -8.6215,\n    \"longitude\": 115.1308,\n    \"platform_digital\": [\n        {\n            \"platform\": \"Shopee\",\n            \"nama_akun\": \"@tokobali_digital\"\n        },\n        {\n            \"platform\": \"Instagram\",\n            \"nama_akun\": \"@tokobali.digital\"\n        }\n    ],\n    \"kelas_usaha\": \"mikro\",\n    \"cakupan_pasar\": \"nasional\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/usaha",
+              "host": ["{{base_url}}"],
+              "path": ["usaha"]
+            },
+            "description": "Menambahkan data usaha baru."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Usaha",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nama_pemilik\": \"I Wayan Contoh Updated\",\n    \"nama_usaha\": \"Toko Digital Bali Updated\",\n    \"kelas_usaha\": \"kecil\",\n    \"cakupan_pasar\": \"internasional\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/usaha/:id",
+              "host": ["{{base_url}}"],
+              "path": ["usaha", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "uuid-here"
+                }
+              ]
+            },
+            "description": "Memperbarui data usaha berdasarkan ID. Hanya field yang dikirim yang akan diperbarui."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Usaha",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/usaha/:id",
+              "host": ["{{base_url}}"],
+              "path": ["usaha", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "uuid-here"
+                }
+              ]
+            },
+            "description": "Menghapus data usaha berdasarkan ID."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
