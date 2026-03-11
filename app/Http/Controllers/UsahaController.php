@@ -44,16 +44,21 @@ class UsahaController extends Controller
             $query->where('kbli_kategori_kode', $request->input('kbli_kategori_kode'));
         }
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('created_by')) {
+            $query->where('created_by', $request->input('created_by'));
+        }
+
         $sortBy = $request->input('sort_by', 'created_at');
         $sortDir = $request->input('sort_dir', 'desc');
         $query->orderBy($sortBy, $sortDir);
 
-        $usaha = $query->get();
+        $perPage = (int) $request->input('per_page', 10);
 
-        return response()->json([
-            'data' => $usaha,
-            'total' => $usaha->count(),
-        ]);
+        return response()->json($query->paginate($perPage));
     }
 
     /**
@@ -102,6 +107,7 @@ class UsahaController extends Controller
 
         $validated['created_by'] = $request->user()->id;
         $validated['is_active'] = true;
+        $validated['status'] = 'pending';
 
         $usaha = Usaha::create($validated);
         $usaha->load('creator:id,name,username,role');
@@ -170,6 +176,11 @@ class UsahaController extends Controller
             unset($validated['platforms']);
         }
 
+        // If usaha was declined and is being edited, reset to pending
+        if ($usaha->status === 'declined') {
+            $validated['status'] = 'pending';
+        }
+
         $validated['updated_by'] = $request->user()->id;
 
         $usaha->update($validated);
@@ -194,12 +205,35 @@ class UsahaController extends Controller
         ]);
     }
 
+    public function verify(Request $request, string $id)
+    {
+        $usaha = Usaha::findOrFail($id);
+        $validated = $request->validate([
+            'status' => 'required|in:pending,approved,declined',
+        ]);
+        $usaha->update(['status' => $validated['status']]);
+        return response()->json([
+            'message' => 'Status usaha diperbarui.',
+            'data' => $usaha,
+        ]);
+    }
+
+    public function creators()
+    {
+        $creatorIds = Usaha::where('is_active', true)->distinct()->pluck('created_by')->filter();
+        $creators = \App\Models\User::whereIn('id', $creatorIds)
+            ->select('id', 'name', 'username', 'role', 'phone')
+            ->orderBy('name')
+            ->get();
+        return response()->json($creators);
+    }
+
     /**
      * Get dashboard statistics.
      */
     public function stats()
     {
-        $usaha = Usaha::where('is_active', true)->get();
+        $usaha = Usaha::where('is_active', true)->where('status', 'approved')->get();
 
         $total = $usaha->count();
 

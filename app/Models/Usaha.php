@@ -45,6 +45,7 @@ class Usaha extends Model
         'created_by',
         'updated_by',
         'is_active',
+        'status',
     ];
 
     protected $appends = ['platforms'];
