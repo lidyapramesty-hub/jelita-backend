@@ -43,8 +43,13 @@ class Usaha extends Model
         'kelas_usaha',
         'cakupan_pasar',
         'created_by',
+        'updated_by',
         'is_active',
     ];
+
+    protected $appends = ['platforms'];
+
+    protected $hidden = ['platform_digital'];
 
     protected function casts(): array
     {
@@ -56,8 +61,18 @@ class Usaha extends Model
         ];
     }
 
+    public function getPlatformsAttribute(): array
+    {
+        return $this->platform_digital ?? [];
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

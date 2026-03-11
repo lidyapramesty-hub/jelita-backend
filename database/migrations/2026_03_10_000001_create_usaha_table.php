@@ -57,6 +57,7 @@ return new class extends Migration
 
             // Metadata
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();

@@ -13,7 +13,7 @@ class UsahaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Usaha::with('creator:id,name,username')
+        $query = Usaha::with(['creator:id,name,username,role', 'updater:id,name,username,role'])
             ->where('is_active', true);
 
         // Search
@@ -88,18 +88,23 @@ class UsahaController extends Controller
             'sub_sls' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'platform_digital' => 'nullable|array',
-            'platform_digital.*.platform' => 'required_with:platform_digital|string',
-            'platform_digital.*.nama_akun' => 'required_with:platform_digital|string',
+            'platforms' => 'nullable|array',
+            'platforms.*.platform' => 'required_with:platforms|string',
+            'platforms.*.nama_akun' => 'required_with:platforms|string',
             'kelas_usaha' => 'nullable|string|in:mikro,kecil,menengah,besar',
             'cakupan_pasar' => 'nullable|string|in:lokal,regional,nasional,internasional',
         ]);
+
+        if (isset($validated['platforms'])) {
+            $validated['platform_digital'] = $validated['platforms'];
+            unset($validated['platforms']);
+        }
 
         $validated['created_by'] = $request->user()->id;
         $validated['is_active'] = true;
 
         $usaha = Usaha::create($validated);
-        $usaha->load('creator:id,name,username');
+        $usaha->load('creator:id,name,username,role');
 
         return response()->json([
             'message' => 'Usaha berhasil ditambahkan.',
@@ -112,7 +117,7 @@ class UsahaController extends Controller
      */
     public function show(string $id)
     {
-        $usaha = Usaha::with('creator:id,name,username')->findOrFail($id);
+        $usaha = Usaha::with(['creator:id,name,username,role', 'updater:id,name,username,role'])->findOrFail($id);
 
         return response()->json([
             'data' => $usaha,
@@ -153,15 +158,22 @@ class UsahaController extends Controller
             'sub_sls' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'platform_digital' => 'nullable|array',
-            'platform_digital.*.platform' => 'required_with:platform_digital|string',
-            'platform_digital.*.nama_akun' => 'required_with:platform_digital|string',
+            'platforms' => 'nullable|array',
+            'platforms.*.platform' => 'required_with:platforms|string',
+            'platforms.*.nama_akun' => 'required_with:platforms|string',
             'kelas_usaha' => 'nullable|string|in:mikro,kecil,menengah,besar',
             'cakupan_pasar' => 'nullable|string|in:lokal,regional,nasional,internasional',
         ]);
 
+        if (isset($validated['platforms'])) {
+            $validated['platform_digital'] = $validated['platforms'];
+            unset($validated['platforms']);
+        }
+
+        $validated['updated_by'] = $request->user()->id;
+
         $usaha->update($validated);
-        $usaha->load('creator:id,name,username');
+        $usaha->load(['creator:id,name,username,role', 'updater:id,name,username,role']);
 
         return response()->json([
             'message' => 'Usaha berhasil diperbarui.',

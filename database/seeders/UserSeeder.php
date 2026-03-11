@@ -52,17 +52,6 @@ class UserSeeder extends Seeder
             User::create(array_merge($data, ['role' => 'pegawai']));
         }
 
-        // Mitra
-        $mitra = [
-            ['name' => 'Mitra 01', 'username' => 'mitra01', 'password' => 'mitra123'],
-            ['name' => 'Mitra 02', 'username' => 'mitra02', 'password' => 'mitra123'],
-            ['name' => 'Mitra 03', 'username' => 'mitra03', 'password' => 'mitra123'],
-            ['name' => 'Mitra 04', 'username' => 'mitra04', 'password' => 'mitra123'],
-            ['name' => 'Mitra 05', 'username' => 'mitra05', 'password' => 'mitra123'],
-        ];
-
-        foreach ($mitra as $data) {
-            User::create(array_merge($data, ['role' => 'mitra']));
-        }
+        // Mitra users are seeded separately by MitraSeeder (from Google Sheets)
     }
 }
