@@ -11,17 +11,31 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
+        $role = $request->input('role', 'pegawai');
+
         $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        $user = User::where('username', $request->username)->first();
+        if ($role === 'mitra') {
+            $user = User::where('phone', $request->username)
+                ->where('role', 'mitra')
+                ->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'username' => ['Username atau password salah.'],
-            ]);
+            if (! $user || ! Hash::check($request->password, $user->password)) {
+                throw ValidationException::withMessages([
+                    'phone' => ['Nomor telepon atau password salah.'],
+                ]);
+            }
+        } else {
+            $user = User::where('username', $request->username)->first();
+
+            if (! $user || ! Hash::check($request->password, $user->password)) {
+                throw ValidationException::withMessages([
+                    'username' => ['Username atau password salah.'],
+                ]);
+            }
         }
 
         $token = $user->createToken('auth-token')->plainTextToken;

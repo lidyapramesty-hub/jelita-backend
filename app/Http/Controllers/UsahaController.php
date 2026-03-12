@@ -13,7 +13,7 @@ class UsahaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Usaha::with('creator:id,name,username')
+        $query = Usaha::with(['creator:id,name,username,role', 'updater:id,name,username,role'])
             ->where('is_active', true);
 
         // Search
@@ -44,16 +44,21 @@ class UsahaController extends Controller
             $query->where('kbli_kategori_kode', $request->input('kbli_kategori_kode'));
         }
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('created_by')) {
+            $query->where('created_by', $request->input('created_by'));
+        }
+
         $sortBy = $request->input('sort_by', 'created_at');
         $sortDir = $request->input('sort_dir', 'desc');
         $query->orderBy($sortBy, $sortDir);
 
-        $usaha = $query->get();
+        $perPage = (int) $request->input('per_page', 10);
 
-        return response()->json([
-            'data' => $usaha,
-            'total' => $usaha->count(),
-        ]);
+        return response()->json($query->paginate($perPage));
     }
 
     /**
@@ -88,18 +93,24 @@ class UsahaController extends Controller
             'sub_sls' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'platform_digital' => 'nullable|array',
-            'platform_digital.*.platform' => 'required_with:platform_digital|string',
-            'platform_digital.*.nama_akun' => 'required_with:platform_digital|string',
+            'platforms' => 'nullable|array',
+            'platforms.*.platform' => 'required_with:platforms|string',
+            'platforms.*.nama_akun' => 'required_with:platforms|string',
             'kelas_usaha' => 'nullable|string|in:mikro,kecil,menengah,besar',
             'cakupan_pasar' => 'nullable|string|in:lokal,regional,nasional,internasional',
         ]);
 
+        if (isset($validated['platforms'])) {
+            $validated['platform_digital'] = $validated['platforms'];
+            unset($validated['platforms']);
+        }
+
         $validated['created_by'] = $request->user()->id;
         $validated['is_active'] = true;
+        $validated['status'] = 'pending';
 
         $usaha = Usaha::create($validated);
-        $usaha->load('creator:id,name,username');
+        $usaha->load('creator:id,name,username,role');
 
         return response()->json([
             'message' => 'Usaha berhasil ditambahkan.',
@@ -112,7 +123,7 @@ class UsahaController extends Controller
      */
     public function show(string $id)
     {
-        $usaha = Usaha::with('creator:id,name,username')->findOrFail($id);
+        $usaha = Usaha::with(['creator:id,name,username,role', 'updater:id,name,username,role'])->findOrFail($id);
 
         return response()->json([
             'data' => $usaha,
@@ -153,15 +164,27 @@ class UsahaController extends Controller
             'sub_sls' => 'nullable|string|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'platform_digital' => 'nullable|array',
-            'platform_digital.*.platform' => 'required_with:platform_digital|string',
-            'platform_digital.*.nama_akun' => 'required_with:platform_digital|string',
+            'platforms' => 'nullable|array',
+            'platforms.*.platform' => 'required_with:platforms|string',
+            'platforms.*.nama_akun' => 'required_with:platforms|string',
             'kelas_usaha' => 'nullable|string|in:mikro,kecil,menengah,besar',
             'cakupan_pasar' => 'nullable|string|in:lokal,regional,nasional,internasional',
         ]);
 
+        if (isset($validated['platforms'])) {
+            $validated['platform_digital'] = $validated['platforms'];
+            unset($validated['platforms']);
+        }
+
+        // If usaha was declined and is being edited, reset to pending
+        if ($usaha->status === 'declined') {
+            $validated['status'] = 'pending';
+        }
+
+        $validated['updated_by'] = $request->user()->id;
+
         $usaha->update($validated);
-        $usaha->load('creator:id,name,username');
+        $usaha->load(['creator:id,name,username,role', 'updater:id,name,username,role']);
 
         return response()->json([
             'message' => 'Usaha berhasil diperbarui.',
@@ -182,12 +205,48 @@ class UsahaController extends Controller
         ]);
     }
 
+    public function verify(Request $request, string $id)
+    {
+        $usaha = Usaha::findOrFail($id);
+        $validated = $request->validate([
+            'status' => 'required|in:pending,approved,declined',
+        ]);
+        $usaha->update(['status' => $validated['status']]);
+        return response()->json([
+            'message' => 'Status usaha diperbarui.',
+            'data' => $usaha,
+        ]);
+    }
+
+    public function mapData()
+    {
+        $usaha = Usaha::where('is_active', true)
+            ->where('status', 'approved')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->select('id', 'nama_usaha', 'nama_pemilik', 'latitude', 'longitude',
+                     'kbli_kategori_kode', 'kbli_kategori_nama', 'kelas_usaha',
+                     'cakupan_pasar', 'kecamatan_nama')
+            ->get();
+        return response()->json(['data' => $usaha]);
+    }
+
+    public function creators()
+    {
+        $creatorIds = Usaha::where('is_active', true)->distinct()->pluck('created_by')->filter();
+        $creators = \App\Models\User::whereIn('id', $creatorIds)
+            ->select('id', 'name', 'username', 'role', 'phone')
+            ->orderBy('name')
+            ->get();
+        return response()->json($creators);
+    }
+
     /**
      * Get dashboard statistics.
      */
     public function stats()
     {
-        $usaha = Usaha::where('is_active', true)->get();
+        $usaha = Usaha::where('is_active', true)->where('status', 'approved')->get();
 
         $total = $usaha->count();
 
@@ -210,10 +269,27 @@ class UsahaController extends Controller
             ->filter(fn ($count, $key) => $key !== '' && $key !== null)
             ->toArray();
 
-        $byKategori = $usaha->groupBy('kbli_kategori_nama')
+        $byKategori = $usaha->groupBy('kbli_kategori_kode')
             ->map(fn ($group) => $group->count())
             ->filter(fn ($count, $key) => $key !== '' && $key !== null)
             ->toArray();
+
+        $byPlatform = [];
+        foreach ($usaha as $u) {
+            $platforms = $u->platform_digital;
+            if (is_string($platforms)) {
+                $platforms = json_decode($platforms, true) ?? [];
+            }
+            if (is_array($platforms)) {
+                foreach ($platforms as $p) {
+                    $platformName = is_array($p) ? ($p['platform'] ?? null) : null;
+                    if ($platformName) {
+                        $byPlatform[$platformName] = ($byPlatform[$platformName] ?? 0) + 1;
+                    }
+                }
+            }
+        }
+        arsort($byPlatform);
 
         $recentCount = $usaha->where('created_at', '>=', now()->subDays(30))->count();
 
@@ -229,6 +305,7 @@ class UsahaController extends Controller
             'internasional' => $byPasar['internasional'],
             'byKecamatan' => $byKecamatan,
             'byKategori' => $byKategori,
+            'byPlatform' => $byPlatform,
             'recentCount' => $recentCount,
         ]);
     }
