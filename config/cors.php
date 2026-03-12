@@ -12,7 +12,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')),
+    'allowed_origins' => array_filter(array_merge(
+        ['https://jelita-bps.vercel.app', 'http://localhost:3000'],
+        explode(',', env('CORS_ALLOWED_ORIGINS', ''))
+    )),
 
     'allowed_origins_patterns' => [],
 
