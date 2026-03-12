@@ -17,27 +17,8 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Nginx config
-RUN echo 'server {\n\
-    listen ${PORT:-80};\n\
-    server_name _;\n\
-    root /var/www/html/public;\n\
-    index index.php index.html;\n\
-\n\
-    location / {\n\
-        try_files $uri $uri/ /index.php?$query_string;\n\
-    }\n\
-\n\
-    location ~ \\.php$ {\n\
-        fastcgi_pass 127.0.0.1:9000;\n\
-        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;\n\
-        include fastcgi_params;\n\
-    }\n\
-\n\
-    location ~ /\\.(?!well-known).* {\n\
-        deny all;\n\
-    }\n\
-}' > /etc/nginx/sites-available/default
+# Copy Nginx config
+COPY docker/nginx.conf /etc/nginx/sites-available/default
 
 # Set working directory
 WORKDIR /var/www/html
@@ -58,11 +39,8 @@ RUN composer dump-autoload --optimize
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Start script
-RUN echo '#!/bin/bash\n\
-sed "s/\${PORT:-80}/${PORT:-80}/g" /etc/nginx/sites-available/default > /etc/nginx/sites-enabled/default\n\
-php artisan config:cache\n\
-php-fpm -D\n\
-nginx -g "daemon off;"' > /usr/local/bin/start.sh && chmod +x /usr/local/bin/start.sh
+# Copy and prepare start script
+COPY docker/start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
 
 CMD ["start.sh"]
