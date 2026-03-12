@@ -218,6 +218,19 @@ class UsahaController extends Controller
         ]);
     }
 
+    public function mapData()
+    {
+        $usaha = Usaha::where('is_active', true)
+            ->where('status', 'approved')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->select('id', 'nama_usaha', 'nama_pemilik', 'latitude', 'longitude',
+                     'kbli_kategori_kode', 'kbli_kategori_nama', 'kelas_usaha',
+                     'cakupan_pasar', 'kecamatan_nama')
+            ->get();
+        return response()->json(['data' => $usaha]);
+    }
+
     public function creators()
     {
         $creatorIds = Usaha::where('is_active', true)->distinct()->pluck('created_by')->filter();
@@ -261,6 +274,23 @@ class UsahaController extends Controller
             ->filter(fn ($count, $key) => $key !== '' && $key !== null)
             ->toArray();
 
+        $byPlatform = [];
+        foreach ($usaha as $u) {
+            $platforms = $u->platform_digital;
+            if (is_string($platforms)) {
+                $platforms = json_decode($platforms, true) ?? [];
+            }
+            if (is_array($platforms)) {
+                foreach ($platforms as $p) {
+                    $platformName = is_array($p) ? ($p['platform'] ?? null) : null;
+                    if ($platformName) {
+                        $byPlatform[$platformName] = ($byPlatform[$platformName] ?? 0) + 1;
+                    }
+                }
+            }
+        }
+        arsort($byPlatform);
+
         $recentCount = $usaha->where('created_at', '>=', now()->subDays(30))->count();
 
         return response()->json([
@@ -275,6 +305,7 @@ class UsahaController extends Controller
             'internasional' => $byPasar['internasional'],
             'byKecamatan' => $byKecamatan,
             'byKategori' => $byKategori,
+            'byPlatform' => $byPlatform,
             'recentCount' => $recentCount,
         ]);
     }

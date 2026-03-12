@@ -13,6 +13,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Usaha CRUD
     Route::get('/usaha/stats', [UsahaController::class, 'stats']);
+    Route::get('/usaha/map-data', [UsahaController::class, 'mapData']);
     Route::get('/usaha', [UsahaController::class, 'index']);
     Route::post('/usaha', [UsahaController::class, 'store']);
     Route::get('/usaha/{id}', [UsahaController::class, 'show']);
