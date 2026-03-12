@@ -60,7 +60,7 @@ RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Start script
 RUN echo '#!/bin/bash\n\
-envsubst '"'"'${PORT}'"'"' < /etc/nginx/sites-available/default > /etc/nginx/sites-enabled/default\n\
+sed "s/\${PORT:-80}/${PORT:-80}/g" /etc/nginx/sites-available/default > /etc/nginx/sites-enabled/default\n\
 php artisan config:cache\n\
 php-fpm -D\n\
 nginx -g "daemon off;"' > /usr/local/bin/start.sh && chmod +x /usr/local/bin/start.sh
