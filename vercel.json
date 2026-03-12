@@ -16,6 +16,5 @@
       "source": "/api/(.*)",
       "destination": "/api/index.php"
     }
-    
   ]
 }
