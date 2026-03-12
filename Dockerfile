@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath gd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Fix MPM conflict and enable mod_rewrite
+RUN a2dismod mpm_event && a2enmod mpm_prefork && a2enmod rewrite
 
 # Set Apache document root to Laravel's public directory
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
@@ -46,9 +46,11 @@ RUN composer dump-autoload --optimize
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Use PORT env variable from Railway
-RUN sed -i 's/Listen 80/Listen ${PORT}/' /etc/apache2/ports.conf
-RUN sed -i 's/:80/:${PORT}/' /etc/apache2/sites-available/000-default.conf
+# Start script that configures PORT at runtime
+RUN echo '#!/bin/bash\n\
+sed -i "s/Listen 80/Listen ${PORT:-80}/" /etc/apache2/ports.conf\n\
+sed -i "s/:80/:${PORT:-80}/" /etc/apache2/sites-available/000-default.conf\n\
+php artisan config:cache\n\
+apache2-foreground' > /usr/local/bin/start.sh && chmod +x /usr/local/bin/start.sh
 
-# Start Apache
-CMD ["apache2-foreground"]
+CMD ["start.sh"]
