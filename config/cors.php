@@ -12,7 +12,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'https://jelita-bps.vercel.app, http://localhost:3000')),
+    'allowed_origins' => array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', 'https://jelita-bps.vercel.app,http://localhost:3000'))),
 
     'allowed_origins_patterns' => [],
 
@@ -20,8 +20,8 @@ return [
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    'max_age' => 86400,
 
-    'supports_credentials' => true,
+    'supports_credentials' => false,
 
 ];
